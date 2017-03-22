@@ -13,6 +13,7 @@
     "lint": "eslint --ext .js,.vue src test/unit/specs test/e2e/specs"
   },
   "dependencies": {
+    "better-scroll": "^0.1.15",
     "css-loader": "^0.26.4",
     "file": "^0.2.2",
     "file-loader": "^0.10.1",

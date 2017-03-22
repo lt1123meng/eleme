@@ -74,7 +74,6 @@
       }
     },
     created: function () {
-      console.log(this)
     },
     data () {
       return {
@@ -95,10 +94,12 @@
 <style lang="stylus" rel="stylesheet/stylus">
   @import "../../common/stylus/mixin.styl"
   .header
+    position: relative;
     color #ffffff
     background-color rgba(7, 17, 27, 0.5)
     overflow hidden
     .content-wrapper
+      position: relative;
       padding 24px 12px 18px 24px
       font-size 0
       .avatar
@@ -172,6 +173,7 @@
           font-size 10px
 
     .bulletin-wrapper
+      position relative
       height 28px
       line-height 28px
       padding 0 22px 0 12px
