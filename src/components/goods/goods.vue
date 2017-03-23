@@ -2,7 +2,8 @@
   <div class="goods">
     <div class="menu-wrapper" ref="menuWrapper">
       <ul>
-        <li v-for="(item, index) in goods" class="menu-item" :class="{'current': currentIndex === index}">
+        <li v-for="(item, index) in goods" class="menu-item menu-item-hook" :class="{'current': currentIndex === index}"
+            @click="selectMenu(index,$event)">
           <span class="text">
             <span v-show="item.type>0" class="icon" :class="classMap[item.type]"></span>
             {{item.name}}
@@ -30,16 +31,23 @@
                   <span class="now">￥{{food.price}}</span>
                   <span class="old" v-show="food.oldPrice">￥{{food.oldPrice}}</span>
                 </div>
+                <div class="cartcontrol-wrapper">
+                  <cartcontrol :food="food"></cartcontrol>
+                </div>
               </div>
             </li>
           </ul>
         </li>
       </ul>
     </div>
+    <shopcart :select-foods="selectFoods" :delivery-price="seller.deliveryPrice"
+              :min-price="seller.minPrice"></shopcart>
   </div>
 </template>
 <script>
   import BScroll from 'better-scroll'
+  import shopcart from '../shopcart/shopcart.vue'
+  import cartcontrol from '../cartcontrol/cartcontrol.vue'
   export default {
     props: {
       seller: {
@@ -48,11 +56,10 @@
     },
     data () {
       return {
-        goods: '',
+        goods: [],
         classMap: ['decrease', 'discount', 'special', 'invoice', 'guarantee'],
         listHeight: [],
-        scrollY: 0,
-        currentIndex: 0
+        scrollY: 0
       }
     },
     created: function () {
@@ -64,26 +71,26 @@
           this._calculateHeight()
         })
       })
-      console.log(this.scrollY)
     },
     methods: {
+      selectMenu (index, event) {
+        if (!event._constructed) {
+          return
+        }
+        let foodList = this.$refs.foodsWrapper.getElementsByClassName('food-list-hook')
+        let el = foodList[index]
+        this.foodsScroll.scrollToElement(el, 300)
+      },
       _initScroll () {
-        this.menuScroll = new BScroll(this.$refs.menuWrapper, {})
+        this.menuScroll = new BScroll(this.$refs.menuWrapper, {
+          click: true
+        })
         this.foodsScroll = new BScroll(this.$refs.foodsWrapper, {
-          probeType: 3
+          probeType: 3,
+          click: true
         })
         this.foodsScroll.on('scroll', (pos) => {
           this.scrollY = Math.round(Math.abs(pos.y))
-          for (let i = 0; i < this.listLength; i++) {
-            debugger
-            let height1 = this.listHeight[i]
-            let height2 = this.listHeight[i + 1]
-            console.log(this.listHeight[i])
-            if (!height2 || (this.scrollY > height1 && this.scrollY < height2)) {
-              alert(1)
-              this.currentIndex = i
-            }
-          }
         })
       },
       _calculateHeight () {
@@ -96,21 +103,37 @@
         }
       }
     },
-//    computed: {
-//      currentIndex () {
-//        alert(1)
-//        for (let i = 0; i < this.listLength; i++) {
-//          let height1 = this.listHeight[i]
-//          let height2 = this.listHeight[i + 1]
-//          if (!height2 || (this.scrollY > height1 && this.scrollY < height2)) {
-//            alert(i)
-//            return i
-//          }
-//        }
-//        return 0
-//      }
-//    },
-    components: {}
+    computed: {
+      currentIndex: function () {
+        for (let i = 0; i < this.listHeight.length; i++) {
+          let height1 = this.listHeight[i]
+          let height2 = this.listHeight[i + 1]
+          if (!height2 || (this.scrollY >= height1 && this.scrollY < height2)) {
+            let menuList = this.$refs.menuWrapper.getElementsByClassName('menu-item-hook')
+            let el = menuList[i]
+            this.menuScroll.scrollToElement(el, 300)
+            return i
+          }
+        }
+        return 0
+      },
+      selectFoods () {
+        let foods = []
+        this.goods.forEach((good) => {
+          console.log(good)
+          good.foods.forEach((food) => {
+            if (food.count) {
+              foods.push(food)
+            }
+          })
+        })
+        return foods
+      }
+    },
+    components: {
+      shopcart,
+      cartcontrol
+    }
   }
 </script>
 <style lang="stylus" rel="stylesheet/stylus">
@@ -128,16 +151,18 @@
       background-color #f3f5f7
       .menu-item
         display table
-        margin: 0 auto;
+        padding 0 12px
         height 54px
-        width 56px
+        width 100%
         line-height 14px
+        box-sizing border-box
         &.current
           position relative
           z-index 10px
           margin-top -1px
           background-color #fff
           font-weight 700
+          border-right 4px solid #f3f5f7
           .text
             border-none()
         .icon
@@ -213,4 +238,8 @@
               text-decoration line-through
               font-size 10px
               color rgb(147, 153, 159)
+          .cartcontrol-wrapper
+            position absolute
+            bottom 0
+            right 0
 </style>
