@@ -15,6 +15,13 @@
         <div class="pay" :class="payClass">{{payDesc}}</div>
       </div>
     </div>
+    <div class="ball-container">
+      <div v-for="ball in balls" class="ball">
+        <transition name="drop" @before-enter="beforeEnter">
+          <div class="inner" v-show="ball.isShow"></div>
+        </transition>
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -35,8 +42,47 @@
         default: 0
       }
     },
-    watch: {
-      selectFoods: function (val) {
+    data () {
+      return {
+        balls: [
+          {
+            isShow: false
+          },
+          {
+            isShow: false
+          },
+          {
+            isShow: false
+          },
+          {
+            isShow: false
+          },
+          {
+            isShow: false
+          }
+        ],
+        dropBalls: []
+      }
+    },
+    methods: {
+      drop: function (el) {
+        console.log(el)
+        console.log(el.getBoundingClientRect())
+        for (let i = 0; i < this.balls.length; i++) {
+          let ball = this.balls[i]
+          if (!ball.isShow) {
+            ball.isShow = true
+            ball.el = el
+            this.dropBalls.push(ball)
+            return
+          }
+        }
+      },
+      beforeEnter: function (el) {
+        let rect = this.dropBalls[this.dropBalls.length - 1].el.getBoundingClientRect()
+        let inner = el.parentNode
+        inner.style.bottom = document.getElementsByTagName('html')[0].offsetHeight - rect.bottom + 10 + 'px'
+        inner.style.left = rect.left + 10 + 'px'
       }
     },
     computed: {
@@ -165,6 +211,16 @@
           &.enough
             background-color #00b43c
             color #fff
-
-    p
+    .ball-container
+      .ball
+        position fixed
+        left 32px
+        bottom 22px
+        z-index 200
+        transition all 3s linear
+        .inner
+          width 16px
+          height 16px
+          border-radius 50%
+          background-color rgb(0, 160, 220)
 </style>

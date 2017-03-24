@@ -32,7 +32,7 @@
                   <span class="old" v-show="food.oldPrice">￥{{food.oldPrice}}</span>
                 </div>
                 <div class="cartcontrol-wrapper">
-                  <cartcontrol :food="food"></cartcontrol>
+                  <cartcontrol @addCart="addCart" :food="food"></cartcontrol>
                 </div>
               </div>
             </li>
@@ -40,7 +40,7 @@
         </li>
       </ul>
     </div>
-    <shopcart :select-foods="selectFoods" :delivery-price="seller.deliveryPrice"
+    <shopcart ref="shopcart" :select-foods="selectFoods" :delivery-price="seller.deliveryPrice"
               :min-price="seller.minPrice"></shopcart>
   </div>
 </template>
@@ -101,6 +101,12 @@
           height += foodList[i].clientHeight
           this.listHeight.push(height)
         }
+      },
+      addCart (event) {
+        this._drop(event.target)
+      },
+      _drop (target) {
+        this.$refs.shopcart.drop(target)
       }
     },
     computed: {
@@ -120,7 +126,6 @@
       selectFoods () {
         let foods = []
         this.goods.forEach((good) => {
-          console.log(good)
           good.foods.forEach((food) => {
             if (food.count) {
               foods.push(food)
