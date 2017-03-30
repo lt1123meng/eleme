@@ -21,6 +21,9 @@
     },
     methods: {
       addCart (event) {
+        debugger
+        console.log('add')
+        console.log(!event._constructed)
         if (!event._constructed) {
           return
         }

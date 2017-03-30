@@ -1,6 +1,6 @@
 <template>
   <div class="shopcart">
-    <div class="content">
+    <div class="content" @click="toggleList">
       <div class="content-left">
         <div class="logo-wrapper">
           <div class="logo" :class="{'highlight':totalCount>0}">
@@ -17,14 +17,43 @@
     </div>
     <div class="ball-container">
       <div v-for="ball in balls" class="ball">
-        <transition name="drop" @before-enter="beforeEnter">
-          <div class="inner" v-show="ball.isShow"></div>
+        <transition name="drop" @before-enter="beforeEnter" @enter="enter" @after-enter="afterEnter">
+          <div v-show="ball.show" class="ball">
+            <div class="inner inner-hook">
+            </div>
+          </div>
         </transition>
       </div>
     </div>
+    <transition name="fold">
+      <div class="shopcart-list" v-show="listShow">
+        <div class="list-header">
+          <h1 class="title">购物车</h1>
+          <span class="empty" @click="empty">清空</span>
+        </div>
+        <div class="list-content" ref="listContent">
+          <ul>
+            <li class="food" v-for="food in selectFoods">
+              <span class="name">{{food.name}}</span>
+              <div class="price">
+                <span>￥{{food.price*food.count}}</span>
+              </div>
+              <div class="cartControl-wrapper">
+                <cartcontrol :food="food"></cartcontrol>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </transition>
+    <transition name="fade">
+      <div class="list-mask" v-show="listShow" @click="hideList()"></div>
+    </transition>
   </div>
 </template>
 <script>
+  import BScroll from 'better-scroll'
+  import cartcontrol from '../cartcontrol/cartcontrol.vue'
   export default {
     props: {
       selectFoods: {
@@ -44,45 +73,70 @@
     },
     data () {
       return {
-        balls: [
-          {
-            isShow: false
-          },
-          {
-            isShow: false
-          },
-          {
-            isShow: false
-          },
-          {
-            isShow: false
-          },
-          {
-            isShow: false
-          }
-        ],
-        dropBalls: []
+        balls: [{show: false}, {show: false}, {show: false}, {show: false}, {show: false}],
+        dropBalls: [],
+        fold: true
       }
     },
     methods: {
-      drop: function (el) {
-        console.log(el)
-        console.log(el.getBoundingClientRect())
+      hideList () {
+        this.fold = false
+      },
+      empty () {
+        this.selectFoods.forEach((food) => {
+          food.count = 0
+        })
+      },
+      toggleList () {
+        if (this.totalCount === 0) {
+          return
+        }
+        this.fold = !this.fold
+      },
+      drop (el) {
         for (let i = 0; i < this.balls.length; i++) {
           let ball = this.balls[i]
-          if (!ball.isShow) {
-            ball.isShow = true
+          if (!ball.show) {
+            ball.show = true
             ball.el = el
             this.dropBalls.push(ball)
             return
           }
         }
       },
-      beforeEnter: function (el) {
-        let rect = this.dropBalls[this.dropBalls.length - 1].el.getBoundingClientRect()
-        let inner = el.parentNode
-        inner.style.bottom = document.getElementsByTagName('html')[0].offsetHeight - rect.bottom + 10 + 'px'
-        inner.style.left = rect.left + 10 + 'px'
+      beforeEnter (el) {
+        let count = this.balls.length
+        while (count--) {
+          let ball = this.balls[count]
+          if (ball.show) {
+            let rect = ball.el.getBoundingClientRect()
+            let x = rect.left - 32
+            let y = -(window.innerHeight - rect.top - 22)
+            el.style.display = ''
+            el.style.webkitTransform = `translate3d(0,${y}px,0)`
+            el.style.transform = `translate3d(0,${y}px,0)`
+            let inner = el.getElementsByClassName('inner-hook')[0]
+            inner.style.webkitTransform = `translate3d(${x}px,0,0)`
+            inner.style.transform = `translate3d(${x}px,0,0)`
+          }
+        }
+      },
+      enter (el) {
+//          let rf = el.offestHeight
+        this.$nextTick(() => {
+          el.style.webkitTransform = 'translate3d(0,0,0)'
+          el.style.transform = 'translate3d(0,0,0)'
+          let inner = el.getElementsByClassName('inner-hook')[0]
+          inner.style.webkitTransform = 'translate3d(0,0,0)'
+          inner.style.transform = 'translate3d(0,0,0)'
+        })
+      },
+      afterEnter (el) {
+        let ball = this.dropBalls.shift()
+        if (ball) {
+          ball.show = false
+          el.style.display = 'none'
+        }
       }
     },
     computed: {
@@ -115,11 +169,35 @@
         } else {
           return 'enough'
         }
+      },
+      listShow () {
+        if (this.totalCount === 0) {
+          this.fold = true
+          return false
+        }
+        let show = !this.fold
+        if (show) {
+          this.$nextTick(() => {
+            this.scroll = new BScroll(this.$refs.listContent, {
+              click: true
+            })
+          })
+        } else {
+          console.log(this.scroll)
+          if (this.scroll) {
+            this.scroll.refresh()
+          }
+        }
+        return show
       }
+    },
+    components: {
+      cartcontrol
     }
   }
 </script>
 <style lang="stylus" rel="stylesheet/stylus">
+  @import "../../common/stylus/mixin.styl"
   .shopcart
     position fixed
     left 0
@@ -144,7 +222,7 @@
           box-sizing border-box
           vertical-align top
           border-radius 50%
-          background-color: #141d27
+          background-color #141d27
           .logo
             width 100%
             height 100%
@@ -158,7 +236,7 @@
               font-size 24px
               color #80858a
               &.highlight
-                color: #fff
+                color #fff
           .num
             position absolute
             top 0
@@ -217,10 +295,81 @@
         left 32px
         bottom 22px
         z-index 200
-        transition all 3s linear
+        transition transform 3s cubic-bezier(.17,.67,.62,1.38)
         .inner
           width 16px
           height 16px
           border-radius 50%
           background-color rgb(0, 160, 220)
+    .shopcart-list
+      position absolute
+      bottom 48px
+      left 0
+      z-index -1
+      width 100%
+      transition all .5s linear
+      transform translate(0, -100%, 0)
+      &.fold-enter, &.fold-leave
+        transform translate(0, 0, 0)
+      .list-header
+        height 40px
+        line-height 40px
+        padding 0 18px
+        background-color #f3f5f7
+        border-bottom 1px solid rgba(7, 17, 27, 0.1)
+        .title
+          float left
+          font-size 14px
+          color rgb(7, 17, 27)
+        .empty
+          float right
+          font-size 12px
+          color rgb(0, 100, 220)
+
+      .list-content
+        padding 0 18px
+        max-height 217px
+        overflow hidden
+        background-color #ffffff
+        .food
+          position relative
+          padding 12px 0
+          box-sizing border-box
+          border-1px(rgba(7, 17, 27, 0.1))
+          .name
+            line-height 24px
+            font-size 14px
+            color rgb(7, 17, 27)
+          .price
+            position absolute
+            right 90px
+            bottom 12px
+            line-height 24px
+            font-size 14px
+            font-weight 700
+            color rgb(240, 20, 20)
+          .cartControl-wrapper
+            position absolute
+            right 0
+            bottom 6px
+    .list-mask
+      position fixed
+      top 0
+      left 0
+      width 100%
+      height 100%
+      z-index: -2;
+      backdrop-filter blur(10px)
+      -webkit-backdrop-filter blur(10px)
+      opacity 1
+      background rgba(7, 17, 27, 0.6)
+      &.fade-enter-active, &.fade-leave-active {
+        opacity 1
+        transition: all 0.5s
+        background rgba(7, 17, 27, 0.6)
+      }
+      &.fade-enter, &.fade-leave-active {
+        opacity 0
+        background rgba(7, 17, 27, 0)
+      }
 </style>
