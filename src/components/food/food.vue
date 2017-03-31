@@ -111,12 +111,12 @@
         }
         Vue.set(this.food, 'count', 1)
       },
-      incrementTotal(type, data) {
+      incrementTotal (type, data) {
         console.log(type)
-        this[type] = data;
+        this[type] = data
         this.$nextTick(() => {
-          this.scroll.refresh();
-        });
+          this.scroll.refresh()
+        })
       },
       needShow (type, text) {
         if (this.onlyContent && !text) {
